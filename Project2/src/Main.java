@@ -18,7 +18,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class Main {
     private static Connection connection;
@@ -28,15 +27,22 @@ public class Main {
     private static JPasswordField passwordField;
     private static JTextArea commandInput;
     private static JTextArea commandOutput;
+    private static JTextArea statusOutput;
 
     public static void main(String[] args) {
         // Define a high-contrast color palette
         Color backgroundColor = new Color(255, 255, 255); // White background
         Color panelColor = new Color(220, 220, 220); // Light gray for panels
         Color textColor = new Color(0, 0, 0); // Black text color
-        Color buttonColor = new Color(0, 120, 215); // Blue for buttons
+        Color connectButtonColor = new Color(0, 120, 215); // Blue color
+        Color disconnectButtonColor = new Color(255, 69, 0); // Red color
+        Color executeButtonColor = new Color(34, 139, 34); // Green color
+        Color clearButtonColor = new Color(255, 215, 0); // Yellow color
+        Color statusBackgroundColor = new Color(255, 255, 200); // Light yellow for status area
+        Color statusTextColor = new Color(0, 0, 0); // Black text color
 
         Font boldFont = new Font("Arial", Font.PLAIN, 14);
+        Font bolderFont = new Font("Arial", Font.BOLD, 15); // for the buttons for user to see
 
         JFrame frame = new JFrame("Database Client Application");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -53,6 +59,7 @@ public class Main {
         userLabel.setFont(boldFont);
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
         panel.add(userLabel, gbc);
 
         userDropdown = new JComboBox<>(new String[] { "root", "client1", "client2", "project2app", "theaccountant" });
@@ -63,20 +70,19 @@ public class Main {
         JLabel dbLabel = new JLabel("Select Database:");
         dbLabel.setForeground(textColor);
         dbLabel.setFont(boldFont);
-        gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridx = 2;
         panel.add(dbLabel, gbc);
 
         dbDropdown = new JComboBox<>(new String[] { "operationslog", "bikedb", "project2" });
         dbDropdown.setFont(boldFont);
-        gbc.gridx = 1;
+        gbc.gridx = 3;
         panel.add(dbDropdown, gbc);
 
         JLabel usernameLabel = new JLabel("Username:");
         usernameLabel.setForeground(textColor);
         usernameLabel.setFont(boldFont);
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 1;
         panel.add(usernameLabel, gbc);
 
         usernameField = new JTextField(20);
@@ -87,58 +93,76 @@ public class Main {
         JLabel passwordLabel = new JLabel("Password:");
         passwordLabel.setForeground(textColor);
         passwordLabel.setFont(boldFont);
-        gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridx = 2;
         panel.add(passwordLabel, gbc);
 
         passwordField = new JPasswordField(20);
         passwordField.setFont(boldFont);
-        gbc.gridx = 1;
+        gbc.gridx = 3;
         panel.add(passwordField, gbc);
 
         JButton connectButton = new JButton("Connect");
-        connectButton.setBackground(buttonColor);
+        connectButton.setBackground(connectButtonColor);
         connectButton.setForeground(Color.WHITE);
-        connectButton.setFont(boldFont);
+        connectButton.setFont(bolderFont);
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        // gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(connectButton, gbc);
 
         JButton disconnectButton = new JButton("Disconnect");
-        disconnectButton.setBackground(buttonColor);
+        disconnectButton.setBackground(disconnectButtonColor);
         disconnectButton.setForeground(Color.WHITE);
-        disconnectButton.setFont(boldFont);
-        gbc.gridx = 1;
+        disconnectButton.setFont(bolderFont);
+        gbc.gridx = 2;
+        gbc.gridwidth = 2;
         panel.add(disconnectButton, gbc);
 
-        commandInput = new JTextArea(10, 50);
+        statusOutput = new JTextArea(2, 50); // A small area for status messages
+        statusOutput.setBackground(statusBackgroundColor);
+        statusOutput.setForeground(statusTextColor);
+        statusOutput.setFont(new Font("Courier New", Font.PLAIN, 14)); // Set to monospaced font
+        statusOutput.setBorder(BorderFactory.createLineBorder(Color.BLACK)); // Add a border
+        statusOutput.setEditable(false); // Make it read-only
+        JScrollPane statusScroll = new JScrollPane(statusOutput);
+        statusScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        statusScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(statusScroll, gbc);
+
+        commandInput = new JTextArea(5, 50);
         commandInput.setBackground(Color.WHITE);
         commandInput.setForeground(textColor);
         commandInput.setFont(boldFont);
         JScrollPane inputScroll = new JScrollPane(commandInput);
         gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.gridwidth = 2;
+        gbc.gridy = 4;
+        gbc.gridwidth = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(inputScroll, gbc);
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
         buttonPanel.setBackground(panelColor);
         gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.gridwidth = 2;
+        gbc.gridy = 5;
+        gbc.gridwidth = 4;
         panel.add(buttonPanel, gbc);
 
         JButton executeButton = new JButton("Execute");
-        executeButton.setBackground(buttonColor);
+        executeButton.setBackground(executeButtonColor);
         executeButton.setForeground(Color.WHITE);
-        executeButton.setFont(boldFont);
+        executeButton.setFont(bolderFont);
         buttonPanel.add(executeButton);
 
         JButton clearCommandButton = new JButton("Clear Command");
-        clearCommandButton.setBackground(buttonColor);
+        clearCommandButton.setBackground(clearButtonColor);
         clearCommandButton.setForeground(Color.WHITE);
-        clearCommandButton.setFont(boldFont);
+        clearCommandButton.setFont(bolderFont);
         buttonPanel.add(clearCommandButton);
 
         commandOutput = new JTextArea(15, 70); // Increase the size for better visibility
@@ -151,20 +175,20 @@ public class Main {
         outputScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         outputScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         gbc.gridx = 0;
-        gbc.gridy = 7;
-        gbc.gridwidth = 2;
+        gbc.gridy = 6;
+        gbc.gridwidth = 4;
         gbc.fill = GridBagConstraints.BOTH; // Make the scroll pane expand to fill the space
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         panel.add(outputScroll, gbc);
 
         JButton clearOutputButton = new JButton("Clear Output");
-        clearOutputButton.setBackground(buttonColor);
+        clearOutputButton.setBackground(clearButtonColor);
         clearOutputButton.setForeground(Color.WHITE);
-        clearOutputButton.setFont(boldFont);
+        clearOutputButton.setFont(bolderFont);
         gbc.gridx = 0;
-        gbc.gridy = 8;
-        gbc.gridwidth = 2;
+        gbc.gridy = 7;
+        gbc.gridwidth = 4;
         panel.add(clearOutputButton, gbc);
 
         frame.getContentPane().add(panel);
@@ -218,7 +242,7 @@ public class Main {
 
         if ("theaccountant".equals(selectedUser)) {
             if (!"operationslog".equals(selectedDb)) {
-                commandOutput.append("Invalid database for theaccountant.\n");
+                statusOutput.append("Invalid database for theaccountant.\n");
                 return;
             }
             expectedUsername = dbConfig.getUsername();
@@ -228,14 +252,14 @@ public class Main {
             expectedUsername = userConfig.getUsername();
             expectedPassword = userConfig.getPassword();
             if ("client1".equals(selectedUser) && !("project2".equals(selectedDb) || "bikedb".equals(selectedDb))) {
-                commandOutput.append("Invalid database for client1.\n");
+                statusOutput.append("Invalid database for client1.\n");
                 return;
             } else if ("client2".equals(selectedUser)
                     && !("project2".equals(selectedDb) || "bikedb".equals(selectedDb))) {
-                commandOutput.append("Invalid database for client2.\n");
+                statusOutput.append("Invalid database for client2.\n");
                 return;
             } else if ("project2app".equals(selectedUser) && !"operationslog".equals(selectedDb)) {
-                commandOutput.append("Invalid database for project2app.\n");
+                statusOutput.append("Invalid database for project2app.\n");
                 return;
             }
         }
@@ -244,13 +268,14 @@ public class Main {
             try {
                 Class.forName(dbConfig.getDriverClass());
                 connection = DriverManager.getConnection(dbConfig.getDbUrl(), username, password);
-                commandOutput.append("Connection established successfully!\n");
+                statusOutput.append("Connection established successfully!\n");
+                statusOutput.append("Connected to database URL: " + dbConfig.getDbUrl() + "\n");
             } catch (ClassNotFoundException | SQLException ex) {
                 ex.printStackTrace();
-                commandOutput.append("Failed to establish connection: " + ex.getMessage() + "\n");
+                statusOutput.append("Failed to establish connection: " + ex.getMessage() + "\n");
             }
         } else {
-            commandOutput.append("Invalid credentials.\n");
+            statusOutput.append("Invalid credentials.\n");
         }
     }
 
@@ -258,13 +283,13 @@ public class Main {
         if (connection != null) {
             try {
                 connection.close();
-                commandOutput.append("Disconnected successfully!\n");
+                statusOutput.append("Disconnected successfully!\n");
             } catch (SQLException ex) {
                 ex.printStackTrace();
-                commandOutput.append("Failed to disconnect: " + ex.getMessage() + "\n");
+                statusOutput.append("Failed to disconnect: " + ex.getMessage() + "\n");
             }
         } else {
-            commandOutput.append("No connection to disconnect.\n");
+            statusOutput.append("No connection to disconnect.\n");
         }
     }
 
@@ -272,10 +297,10 @@ public class Main {
         String command = commandInput.getText();
         if (connection != null) {
             try {
-                Statement stmt = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                        ResultSet.CONCUR_READ_ONLY);
                 if (command.trim().toLowerCase().startsWith("select")) {
-                    ResultSet rs = stmt.executeQuery(command);
+                    PreparedStatement stmt = connection.prepareStatement(command, ResultSet.TYPE_SCROLL_INSENSITIVE,
+                            ResultSet.CONCUR_READ_ONLY);
+                    ResultSet rs = stmt.executeQuery();
                     java.sql.ResultSetMetaData rsmd = rs.getMetaData();
                     int columnCount = rsmd.getColumnCount();
 
@@ -327,7 +352,8 @@ public class Main {
                     commandOutput.append(border.toString() + "\n");
 
                 } else {
-                    int result = stmt.executeUpdate(command);
+                    PreparedStatement stmt = connection.prepareStatement(command);
+                    int result = stmt.executeUpdate();
                     commandOutput.append("Command executed successfully, affected rows: " + result + "\n");
                 }
             } catch (SQLException ex) {
