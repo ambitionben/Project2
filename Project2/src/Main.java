@@ -54,7 +54,7 @@ public class Main {
         panel.setBackground(panelColor);
         GridBagConstraints gbc = new GridBagConstraints();
 
-        JLabel userLabel = new JLabel("Select User:");
+        JLabel userLabel = new JLabel("User Properties:");
         userLabel.setForeground(textColor);
         userLabel.setFont(boldFont);
         gbc.gridx = 0;
@@ -62,18 +62,20 @@ public class Main {
         gbc.anchor = GridBagConstraints.WEST;
         panel.add(userLabel, gbc);
 
-        userDropdown = new JComboBox<>(new String[] { "root", "client1", "client2", "project2app", "theaccountant" });
+        userDropdown = new JComboBox<>(new String[] { "root.properties", "client1.properties", "client2.properties",
+                "project2app.properties", "theaccountant.properties" });
         userDropdown.setFont(boldFont);
         gbc.gridx = 1;
         panel.add(userDropdown, gbc);
 
-        JLabel dbLabel = new JLabel("Select Database:");
+        JLabel dbLabel = new JLabel("DB URL Properties:");
         dbLabel.setForeground(textColor);
         dbLabel.setFont(boldFont);
         gbc.gridx = 2;
         panel.add(dbLabel, gbc);
 
-        dbDropdown = new JComboBox<>(new String[] { "operationslog", "bikedb", "project2" });
+        dbDropdown = new JComboBox<>(
+                new String[] { "operationslog.properties", "bikedb.properties", "project2.properties" });
         dbDropdown.setFont(boldFont);
         gbc.gridx = 3;
         panel.add(dbDropdown, gbc);
