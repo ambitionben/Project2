@@ -62,8 +62,8 @@ public class Main {
         gbc.anchor = GridBagConstraints.WEST;
         panel.add(userLabel, gbc);
 
-        userDropdown = new JComboBox<>(new String[] { "root.properties", "client1.properties", "client2.properties",
-                "project2app.properties", "theaccountant.properties" });
+        userDropdown = new JComboBox<>(new String[] { "root.propertie", "client1.propertie", "client2.propertie",
+                "project2app.propertie", "theaccountant.propertie" });
         userDropdown.setFont(boldFont);
         gbc.gridx = 1;
         panel.add(userDropdown, gbc);
@@ -75,7 +75,7 @@ public class Main {
         panel.add(dbLabel, gbc);
 
         dbDropdown = new JComboBox<>(
-                new String[] { "operationslog.properties", "bikedb.properties", "project2.properties" });
+                new String[] { "operationslog.propertie", "bikedb.propertie", "project2.propertie" });
         dbDropdown.setFont(boldFont);
         gbc.gridx = 3;
         panel.add(dbDropdown, gbc);
