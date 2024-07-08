@@ -3,13 +3,10 @@ Name: Benjamin Belizaire
 Course: CNT 4714 Summer 2024
 Assignment title: Project 2 – A Two-tier Client-Server Application
 Date: July 7, 2024
-Class: Main
+Class: AccountantApp
 */
 
 import javax.swing.*;
-
-import com.mysql.cj.jdbc.result.ResultSetMetaData;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,7 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
-public class Main {
+public class AccountantApp {
     private static Connection connection;
     private static JComboBox<String> userDropdown;
     private static JComboBox<String> dbDropdown;
@@ -66,8 +63,7 @@ public class Main {
         gbc.anchor = GridBagConstraints.WEST;
         panel.add(userLabel, gbc);
 
-        userDropdown = new JComboBox<>(new String[] { "root", "client1", "client2",
-                "project2app" });
+        userDropdown = new JComboBox<>(new String[] { "theaccountant" });
         userDropdown.setFont(boldFont);
         gbc.gridx = 1;
         panel.add(userDropdown, gbc);
@@ -78,8 +74,7 @@ public class Main {
         gbc.gridx = 2;
         panel.add(dbLabel, gbc);
 
-        dbDropdown = new JComboBox<>(
-                new String[] { "bikedb", "project2" });
+        dbDropdown = new JComboBox<>(new String[] { "operationslog" });
         dbDropdown.setFont(boldFont);
         gbc.gridx = 3;
         panel.add(dbDropdown, gbc);
@@ -236,95 +231,35 @@ public class Main {
         });
     }
 
-    private static Properties loadProject2AppProperties() {
+    private static void connectToDatabase() {
         Properties properties = new Properties();
-        try (InputStream input = Main.class.getClassLoader().getResourceAsStream("project2app.properties")) {
+        try (InputStream input = AccountantApp.class.getClassLoader().getResourceAsStream("theaccountant.properties")) {
             if (input == null) {
-                commandOutput.append("Sorry, unable to find project2app.properties\n");
-                return properties;
+                statusOutput.append("Sorry, unable to find theaccountant.properties\n");
+                return;
             }
+            // Load the properties file
             properties.load(input);
         } catch (IOException ex) {
             ex.printStackTrace();
-            commandOutput.append("Failed to load project2app properties file: " + ex.getMessage() + "\n");
+            statusOutput.append("Failed to load properties file: " + ex.getMessage() + "\n");
+            return;
         }
-        return properties;
-    }
 
-    private static void logOperation(String user, boolean isQuery) {
-        Properties properties = loadProject2AppProperties();
-        String logUsername = properties.getProperty("MYSQL_DB_USERNAME");
-        String logPassword = properties.getProperty("MYSQL_DB_PASSWORD");
+        String dbDriverClass = properties.getProperty("MYSQL_DB_DRIVER_CLASS");
+        String dbUrl = properties.getProperty("MYSQL_DB_URL");
+        String expectedUsername = properties.getProperty("MYSQL_DB_USERNAME");
+        String expectedPassword = properties.getProperty("MYSQL_DB_PASSWORD");
 
-        String logDbDriverClass = "com.mysql.cj.jdbc.Driver";
-        String logDbUrl = "jdbc:mysql://localhost:3306/operationslog";
-
-        try {
-            Class.forName(logDbDriverClass);
-            try (Connection logConnection = DriverManager.getConnection(logDbUrl, logUsername, logPassword);
-                    PreparedStatement pstmt = logConnection.prepareStatement(
-                            "INSERT INTO operationscount (login_username, num_queries, num_updates) VALUES (?, ?, ?) " +
-                                    "ON DUPLICATE KEY UPDATE num_queries = num_queries + ?, num_updates = num_updates + ?")) {
-
-                pstmt.setString(1, user);
-                if (isQuery) {
-                    pstmt.setInt(2, 1);
-                    pstmt.setInt(3, 0);
-                    pstmt.setInt(4, 1);
-                    pstmt.setInt(5, 0);
-                } else {
-                    pstmt.setInt(2, 0);
-                    pstmt.setInt(3, 1);
-                    pstmt.setInt(4, 0);
-                    pstmt.setInt(5, 1);
-                }
-
-                int rowsAffected = pstmt.executeUpdate();
-                if (rowsAffected > 0) {
-                    System.out.println("Operation logged successfully for user: " + user);
-                } else {
-                    System.out.println("Failed to log operation for user: " + user);
-                }
-
-            }
-        } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void connectToDatabase() {
-        String selectedUser = (String) userDropdown.getSelectedItem();
-        String selectedDb = (String) dbDropdown.getSelectedItem();
         String username = usernameField.getText();
         String password = new String(passwordField.getPassword());
 
-        DatabaseConfig dbConfig = new DatabaseConfig(selectedDb);
-        String expectedUsername = null;
-        String expectedPassword = null;
-
-        if ("project2app".equals(selectedUser)) {
-            expectedUsername = dbConfig.getUsername();
-            expectedPassword = dbConfig.getPassword();
-        } else {
-            UserConfig userConfig = new UserConfig(selectedUser);
-            expectedUsername = userConfig.getUsername();
-            expectedPassword = userConfig.getPassword();
-            if ("client1".equals(selectedUser) && !("project2".equals(selectedDb) || "bikedb".equals(selectedDb))) {
-                statusOutput.append("Invalid database for client1.\n");
-                return;
-            } else if ("client2".equals(selectedUser)
-                    && !("project2".equals(selectedDb) || "bikedb".equals(selectedDb))) {
-                statusOutput.append("Invalid database for client2.\n");
-                return;
-            }
-        }
-
         if (username.equals(expectedUsername) && password.equals(expectedPassword)) {
             try {
-                Class.forName(dbConfig.getDriverClass());
-                connection = DriverManager.getConnection(dbConfig.getDbUrl(), username, password);
+                Class.forName(dbDriverClass);
+                connection = DriverManager.getConnection(dbUrl, username, password);
                 statusOutput.append("Connection established successfully!\n");
-                statusOutput.append("Connected to database: " + dbConfig.getDbUrl() + "\n");
+                statusOutput.append("Connected to database: " + dbUrl + "\n");
             } catch (ClassNotFoundException | SQLException ex) {
                 ex.printStackTrace();
                 statusOutput.append("Failed to establish connection: " + ex.getMessage() + "\n");
@@ -352,9 +287,7 @@ public class Main {
         String command = commandInput.getText();
         if (connection != null) {
             try {
-                boolean isQuery = command.trim().toLowerCase().startsWith("select");
-
-                if (isQuery) {
+                if (command.trim().toLowerCase().startsWith("select")) {
                     PreparedStatement stmt = connection.prepareStatement(command, ResultSet.TYPE_SCROLL_INSENSITIVE,
                             ResultSet.CONCUR_READ_ONLY);
                     ResultSet rs = stmt.executeQuery();
@@ -413,13 +346,6 @@ public class Main {
                     int result = stmt.executeUpdate();
                     commandOutput.append("Command executed successfully, affected rows: " + result + "\n");
                 }
-
-                // Log successful operation
-                String selectedUser = (String) userDropdown.getSelectedItem();
-                if (!"theaccountant".equals(selectedUser)) {
-                    logOperation(selectedUser, isQuery);
-                }
-
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 commandOutput.append("Failed to execute command: " + ex.getMessage() + "\n");
@@ -428,5 +354,4 @@ public class Main {
             commandOutput.append("No connection established.\n");
         }
     }
-
 }

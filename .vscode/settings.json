@@ -2,6 +2,7 @@
   "java.project.referencedLibraries": [
     "lib/**/*.jar",
     "c:\\Users\\Benja\\AppData\\Local\\Microsoft\\Windows\\INetCache\\IE\\5YVIF8AG\\mysql-connector-j-8.4.0[1].jar",
-    "c:\\Users\\Benja\\AppData\\Local\\Microsoft\\Windows\\INetCache\\IE\\PCFCVAKE\\mysql-connector-j-8.4.0[2].jar"
+    "c:\\Users\\Benja\\AppData\\Local\\Microsoft\\Windows\\INetCache\\IE\\PCFCVAKE\\mysql-connector-j-8.4.0[2].jar",
+    "c:\\Users\\Benja\\AppData\\Local\\Microsoft\\Windows\\INetCache\\IE\\OSEXZEWS\\mysql-connector-j-8.4.0[1].jar"
   ]
 }
