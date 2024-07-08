@@ -13,7 +13,6 @@ import com.mysql.cj.jdbc.result.ResultSetMetaData;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -261,31 +260,21 @@ public class Main {
 
         try {
             Class.forName(logDbDriverClass);
-            try (Connection logConnection = DriverManager.getConnection(logDbUrl, logUsername, logPassword);
-                    PreparedStatement pstmt = logConnection.prepareStatement(
-                            "INSERT INTO operationscount (login_username, num_queries, num_updates) VALUES (?, ?, ?) " +
-                                    "ON DUPLICATE KEY UPDATE num_queries = num_queries + ?, num_updates = num_updates + ?")) {
+            try (Connection logConnection = DriverManager.getConnection(logDbUrl, logUsername, logPassword)) {
 
-                pstmt.setString(1, user);
+                String query;
                 if (isQuery) {
-                    pstmt.setInt(2, 1);
-                    pstmt.setInt(3, 0);
-                    pstmt.setInt(4, 1);
-                    pstmt.setInt(5, 0);
+                    query = "INSERT INTO operationscount (login_username, num_queries, num_updates) VALUES (?, 1, 0) " +
+                            "ON DUPLICATE KEY UPDATE num_queries = num_queries + 1";
                 } else {
-                    pstmt.setInt(2, 0);
-                    pstmt.setInt(3, 1);
-                    pstmt.setInt(4, 0);
-                    pstmt.setInt(5, 1);
+                    query = "INSERT INTO operationscount (login_username, num_queries, num_updates) VALUES (?, 0, 1) " +
+                            "ON DUPLICATE KEY UPDATE num_updates = num_updates + 1";
                 }
 
-                int rowsAffected = pstmt.executeUpdate();
-                if (rowsAffected > 0) {
-                    System.out.println("Operation logged successfully for user: " + user);
-                } else {
-                    System.out.println("Failed to log operation for user: " + user);
+                try (PreparedStatement pstmt = logConnection.prepareStatement(query)) {
+                    pstmt.setString(1, user);
+                    pstmt.executeUpdate();
                 }
-
             }
         } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -310,11 +299,11 @@ public class Main {
             expectedUsername = userConfig.getUsername();
             expectedPassword = userConfig.getPassword();
             if ("client1".equals(selectedUser) && !("project2".equals(selectedDb) || "bikedb".equals(selectedDb))) {
-                statusOutput.append("Invalid database for client1.\n");
+                statusOutput.append("Not Connected: Invalid database for client1.\n");
                 return;
             } else if ("client2".equals(selectedUser)
                     && !("project2".equals(selectedDb) || "bikedb".equals(selectedDb))) {
-                statusOutput.append("Invalid database for client2.\n");
+                statusOutput.append("Not Connrected: Invalid database for client2.\n");
                 return;
             }
         }
@@ -330,7 +319,7 @@ public class Main {
                 statusOutput.append("Failed to establish connection: " + ex.getMessage() + "\n");
             }
         } else {
-            statusOutput.append("Invalid credentials.\n");
+            statusOutput.append("Not Connected: User Credentials Does Not Match Propertie File.\n");
         }
     }
 
@@ -352,9 +341,7 @@ public class Main {
         String command = commandInput.getText();
         if (connection != null) {
             try {
-                boolean isQuery = command.trim().toLowerCase().startsWith("select");
-
-                if (isQuery) {
+                if (command.trim().toLowerCase().startsWith("select")) {
                     PreparedStatement stmt = connection.prepareStatement(command, ResultSet.TYPE_SCROLL_INSENSITIVE,
                             ResultSet.CONCUR_READ_ONLY);
                     ResultSet rs = stmt.executeQuery();
@@ -408,18 +395,23 @@ public class Main {
                     // Print bottom border
                     commandOutput.append(border.toString() + "\n");
 
+                    // Log successful query operation
+                    String selectedUser = (String) userDropdown.getSelectedItem();
+                    if (!"theaccountant".equals(selectedUser)) {
+                        logOperation(selectedUser, true); // Log as query
+                    }
+
                 } else {
                     PreparedStatement stmt = connection.prepareStatement(command);
                     int result = stmt.executeUpdate();
                     commandOutput.append("Command executed successfully, affected rows: " + result + "\n");
-                }
 
-                // Log successful operation
-                String selectedUser = (String) userDropdown.getSelectedItem();
-                if (!"theaccountant".equals(selectedUser)) {
-                    logOperation(selectedUser, isQuery);
+                    // Log successful update operation
+                    String selectedUser = (String) userDropdown.getSelectedItem();
+                    if (!"theaccountant".equals(selectedUser)) {
+                        logOperation(selectedUser, false); // Log as update
+                    }
                 }
-
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 commandOutput.append("Failed to execute command: " + ex.getMessage() + "\n");
